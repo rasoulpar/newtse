@@ -1,11 +1,12 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import asyncio
 from pyppeteer import launch
 import persian
 import csv
-from tabulate import tabulate
-import math
+import scipy as scipy
+from persiantools.jdatetime import JalaliDate
 
 ticker = ''
 async def main():
@@ -13,8 +14,8 @@ async def main():
     page = await browser.newPage()
     tickers = read_to_dict('./tickers.csv')
 
-    tickers_list = ['فولاد']
-    days = 5 * 365
+    tickers_list = ['پاسا']
+    days = 20
 
     for i in range(0, len(tickers_list)):
         ticker = tickers_list[i]
@@ -25,25 +26,30 @@ async def main():
 
     await page.goto(url)
     priceHistory = await page.querySelectorEval('body', 'el => el.innerText.split(";").map(el => { let eel = el.split("@"); return eel; })')
-
     df = pd.DataFrame(priceHistory, columns=['Date', 'High', 'Low', 'Close', 'Last', 'First', 'Open', 'TradesValue', 'Volume', 'TradesCount'])
-    df = df.sort_values(by='Date', ascending=True)
 
     df['Close'] = df.Close.astype(float)
-    df.index = df.Date
+    df.drop(df.tail(1).index,inplace=True)
+    # print(df)
+    df['Date'] = df['Date'].str[:4] + '-' + df['Date'].str[4:6] + '-' + df['Date'].str[6:8]
+    df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+    df['ts'] = df.Date.values.astype(np.int64) // 10 ** 9
+    df['JDate'] = df.Date.map(lambda x: JalaliDate.to_jalali(x.year, x.month, x.day))
+    df.index = df['Date']
+    del df['Date']
+    
+    save_to_csv('./' + tickers_list[0] + '.csv', df.to_dict())
+    
+
+    # print(df.assign(temp_c=lambda x: ((x['Date'][0]))).head())
+
+    df = df.sort_values(by='Date', ascending=True)
+    
     df['returns'] = (df.Close / df.Close.shift(1)) - 1
 
     df = df.dropna()
     
-    hist_me(df)
-
-    df.sort_values('returns', inplace=True, ascending=True)
-
-    VaR_90 = df['returns'].quantile(0.1) * 100
-    VaR_95 = df['returns'].quantile(0.05) * 100
-    VaR_99 = df['returns'].quantile(0.01) * 100
-
-    print(tabulate([['90%', VaR_90], ['95%', VaR_95], ['99%', VaR_99]], ('Confidence Level', 'Value at Risk %')))
+    # hist_me(df)
 
     await browser.close()
 
@@ -55,6 +61,12 @@ def read_to_dict(path_to_file):
     with open(path_to_file, newline='', encoding='utf-8') as csv_file:
         reader = csv.reader(csv_file)
         return dict(reader)
+
+def save_to_csv(path_to_file, data_dict):
+    with open(path_to_file, 'w', newline='', encoding='utf-8') as csv_file:
+        writer = csv.writer(csv_file)
+        for key, value in data_dict.items():
+            writer.writerow([key, value])
 
 def hist_me(df):
     plt.hist(df.returns, bins=40)

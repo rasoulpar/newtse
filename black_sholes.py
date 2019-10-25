@@ -1,11 +1,10 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn
-import yfinance as yf
-from tabulate import tabulate
 import sys
 import math
+
+#-----------------------------------------------------------------------
+
+# Return the value of the Gaussian probability function with mean 0.0
+# and standard deviation 1.0 at the given x value.
 
 def phi(x):
     return math.exp(-x * x / 2.0) / math.sqrt(2.0 * math.pi)
@@ -53,38 +52,7 @@ def callPrice(s, x, r, sigma, t):
     b = a - sigma * math.sqrt(t)
     return s * cdf(a) - x * math.exp(-r * t) * cdf(b)
 
-df = pd.DataFrame()
 
-# df = yf.download('FB', '2018-01-01', '2018-01-15')
-df = yf.download('FB',period='5y')
+call_price = callPrice(1170.80, 1300.00, 0.10, 0.071, 0.25)
 
-df['returns'] = (df.Close.shift(-5) / df.Close) - 1
-print(np.std(df.returns))
-df = df.dropna()
-
-# plt.hist(df.returns, bins=40)
-# plt.xlabel('Retruns')
-# plt.ylabel('Frequency')
-# plt.grid(True)
-
-# plt.show()
-
-df.sort_values('returns', inplace=False, ascending=True)
-
-print(callPrice(186.16, 210.00, 0.05, 0.038, 0.25))
-
-VaR_90 = df['returns'].quantile(0.1)
-x = 186.15 * (1 + VaR_90)
-c_90 = callPrice(x, 200, 0.05, 0.038, 0.25)
-
-VaR_95 = df['returns'].quantile(0.05)
-x = 186.15 * (1 + VaR_95)
-c_95 = callPrice(x, 200, 0.05, 0.038, 0.25)
-
-VaR_99 = df['returns'].quantile(0.01)
-x = 186.15 * (1 + VaR_99)
-c_99 = callPrice(x, 200, 0.05, 0.038, 0.25)
-
-print(tabulate([['90%', VaR_90, c_90 * 100], ['95%', VaR_95, c_95 * 100], ['99%', VaR_99, c_99 * 100]], ('Confidence Level', 'Value at Risk (%)', 'VaR')))
-
-
+print(call_price -2.30)
