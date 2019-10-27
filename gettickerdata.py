@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from datetime import datetime as dt
 import matplotlib.pyplot as plt
 import asyncio
 from pyppeteer import launch
@@ -36,12 +37,11 @@ async def main():
     df['ts'] = df.Date.values.astype(np.int64) // 10 ** 9
     df['JDate'] = df.Date.map(lambda x: JalaliDate.to_jalali(x.year, x.month, x.day))
     df.index = df['Date']
-    del df['Date']
+    del df['Date'], df['ts']
     
-    save_to_csv('./' + tickers_list[0] + '.csv', df.to_dict())
-    
-
-    # print(df.assign(temp_c=lambda x: ((x['Date'][0]))).head())
+    is_bet = is_between_cond([1398, 7, 25], [1398, 8, 3], df)
+    print(df[is_bet])
+    # save_to_csv('./' + tickers_list[0] + '.csv', df.to_dict())
 
     df = df.sort_values(by='Date', ascending=True)
     
@@ -53,7 +53,23 @@ async def main():
 
     await browser.close()
 
+# accepts tow list of jalali dates, year, month and day
+def is_between_cond(j_start, j_end, df):
+    start = jalali_to_datetime64(j_start[0], j_start[1], j_start[2])
+    end = jalali_to_datetime64(j_end[0], j_end[1], j_end[2])
+    type(True)
+    type(False)
+    between_booleans = []
+    for day in df.index:
+        if day >= start and day < end:
+            between_booleans.append(True)
+        else:
+            between_booleans.append(False)
+    
+    is_between = pd.Series(between_booleans)
 
+    return is_between
+    
 def tickers_list():
     tickers_list = read_to_dict('./tickers_list.csv')
 
@@ -75,6 +91,10 @@ def hist_me(df):
     plt.grid(True)
     plt.show()
 
+# year, month, day
+def jalali_to_datetime64(j_year=1368, j_month=7, j_day=25):
+    return np.datetime64(JalaliDate(j_year, j_month, j_day).to_gregorian())
+    
 
 
 asyncio.get_event_loop().run_until_complete(main())
