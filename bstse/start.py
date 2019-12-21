@@ -4,5 +4,6 @@ import TickersList as tl
 
 i = 46348559193224090
 
-tickersL = ph.PriceHistory(i=i)
-print(tickersL.get_price_history())
+tickersL = iif.InstInfoFast(i=i)
+
+tickersL.get_inst_info_fast()
