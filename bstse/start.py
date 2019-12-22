@@ -1,6 +1,6 @@
 import PriceHistory as ph
-import InstInfoFast as iif
 import TickersList as tl
+import InstInfoFast as iif
 
 i = 46348559193224090
 
